@@ -17,6 +17,7 @@ class Emitter:
 
     def on(self, event_name, callback):
         """It sets the callback functions.
+
         :param event_name: str, name of the event
         :param callback: function
         """
@@ -29,6 +30,7 @@ class Emitter:
 
     def emit(self, event_name, *args, **kwargs):
         """It emits an event, and calls the corresponding callback function.
+        
         :param event_name: str, name of the event.
         """
         if self.callbacks is not None and event_name in self.callbacks:
