@@ -167,8 +167,14 @@ class MultipleBuffers(Emitter):
     def __getitem__(self, key):
         return self.variables[key]
     
-    def key(self):
+    def __len__(self):
+        return len(self.variables)
+    
+    def keys(self):
         return self.variables.keys()
+
+    def values(self):
+        return self.variables.values()
 
     def resetAll(self):
         for buffer in self.variables.values():

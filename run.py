@@ -3,9 +3,10 @@ import signal
 import os
 from oscilloscope.customSerial import CustomSerial
 from oscilloscope.buffer import MultipleBuffers
+from oscilloscope.utils import dbScale
 from PyQt5.QtCore import pyqtSignal
 from PyQt5 import uic
-from PyQt5.QtWidgets import QMainWindow, QApplication
+from PyQt5.QtWidgets import QMainWindow, QApplication, QFileDialog
 import numpy as np
 import json
 
@@ -25,16 +26,18 @@ class Oscilloscope(QMainWindow):
         self.__configureBuffer()
         self.__configureButtons()
         self.__configureSerial()
+        self.__configureMenuBar()
 
     def __configureGraph(self):
-        self.curve = self.graph.plot(pen=(200,200,200))
+        self.graph.showGrid(x=True, y=True)
+        self.curve = self.graph.plot(pen=(0,190,255))
         self.winSize.valueChanged.connect(lambda value: self.buffer.setNewLen(value))
-        self.clearBtn.clicked.connect(self.clearPlot)
+        # self.clearBtn.clicked.connect(self.clearPlot)
 
     def __configureBuffer(self):
         self.buffer = MultipleBuffers(variables=['x'], autoclear=False, maxlen=100)
         self.buffer['x'].on('is-full', lambda: self.bufferIsFull.emit())
-        self.bufferIsFull.connect(lambda: self.plot(self.buffer['x'].getData()))
+        self.bufferIsFull.connect(lambda: self.plot(self.buffer['x'].getData(), clear=True))
 
     def __configureButtons(self):
         self.connectBtn.clicked.connect(self.choosePortDevice)
@@ -51,6 +54,9 @@ class Oscilloscope(QMainWindow):
         self.serial.on('ports-update', self.updatePortsList)
         self.serial.start()
 
+    def __configureMenuBar(self):
+        self.actionOpen.triggered.connect(self.openFile)
+
     def choosePortDevice(self):
         device = self.devices.currentText()
         self.connectBtn.setChecked(False)
@@ -59,10 +65,13 @@ class Oscilloscope(QMainWindow):
         else:
             self.serial.disconnect()
 
-    def plot(self,*args,**kwargs):
+    def plot(self, *args,**kwargs):
         try:
             self.curve.setData(*args,**kwargs)
-            self.buffer.clearAll()
+            if 'clear' in kwargs:
+                clear = kwargs['clear']
+                if clear:
+                    self.buffer.clearAll()
         except Exception as e:
             print('Plot error: ', e)
 
@@ -71,14 +80,17 @@ class Oscilloscope(QMainWindow):
 
     def updateSerialConnectionStatus(self, status):
         self.connectBtn.setChecked(status)
-        print('Serial connection Status: ', status)
 
     def updateBaudrate(self, baudrate):
         self.serial['baudrate'] = baudrate
 
-    def updatePortsList(self, ports):
+    def updatePortsList(self, ports:list):
         self.devices.clear()
         self.devices.addItems(ports)
+    
+    def updateChannelsList(self, channels:list):
+        self.channels.clear()
+        self.channels.addItems(channels)
 
     def receiveNewData(self, data):
         try:
@@ -87,6 +99,25 @@ class Oscilloscope(QMainWindow):
         except Exception as e:
             print(e)
 
+    def updateChannelPlot(self, name=None):
+        if name is None:
+            variable = self.channels.currentText()
+        else:
+            variable = name
+        if len(variable) > 0:
+            self.plot(self.buffer[variable].getData(), clear=False)
+
+    def openFile(self):
+        dlg = QFileDialog()
+        filesFilter = "CSV(*.csv);; All files(*.*)"
+        filepath = dlg.getOpenFileName(self, "Choose a directory", "", filesFilter)[0]
+        print('filepath: ', filepath)
+        if len(filepath) > 0:
+            self.buffer.load(filepath)
+            if len(self.buffer) > 0:
+                self.updateChannelsList(self.buffer.keys())
+                self.updateChannelPlot()
+                    
     def stop(self):
         self.serial.stop()
         self.buffer.clearAll()
