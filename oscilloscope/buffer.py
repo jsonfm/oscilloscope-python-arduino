@@ -2,8 +2,9 @@ import time
 import os
 from collections import deque
 import pandas as pd
-import random
+# import random
 from .sevent import Emitter
+# import numpy as np
 
 
 class Buffer(Emitter):
@@ -23,7 +24,9 @@ class Buffer(Emitter):
         self.timed = timed
         self.data = deque(maxlen=self.maxlen)
         self.time = None
+        self.initialTime = 0
         self.lastTime = 0
+        self.dt = None
         if self.timed:
             self.time = deque(maxlen=self.maxlen)
 
@@ -44,6 +47,21 @@ class Buffer(Emitter):
         """
         self.maxlen = length
         self.data = deque(maxlen=length)
+
+    def getSampleInterval(self):
+        """It returns the sample time interval on secs."""
+        if self.dt is not None:
+            return self.dt
+        else:
+            return 0
+
+    def getSampleFrequency(self):
+        """It returns the sample frequency on Hz."""
+        dt = self.getSampleInterval()
+        if dt == 0:
+            return 0
+        else:
+            return 1 / dt
 
     def isFull(self):
         """It checks if the buffer is full."""
@@ -72,23 +90,31 @@ class Buffer(Emitter):
         return self.time
 
     def getDataAndTime(self):
+        """It returns a dict with the accumulated data and the respective time."""
         data = {self.name: self.getData(), 't': self.getTime()}
         return data
 
     def sampleTime(self):
+        """It samples time if the buffers needs it."""
         if self.sampleTimeEnabled():
             if len(self.time) == 0:
-                self.lastTime = time.time()
+                self.initialTime = time.time()
                 self.time.append(0)
             else:
                 currentTime = time.time()
+                elapsedTime = currentTime - self.initialTime
                 dt = currentTime - self.lastTime
-                self.time.append(dt)
+                self.dt = dt
+                self.lastTime = currentTime
+                self.time.append(elapsedTime)
     
     def notifyIsFull(self):
         """If the buffer is full it will emit an event signal."""
         if self.isFull():
+            t0 = time.time()
             self.emit('is-full', self.data)
+            t1 = time.time()
+            print(t1 - t0)
             if self.autoclear:
                 self.data.clear()
                 if self.time is not None:
@@ -158,10 +184,11 @@ class MultipleBuffers(Emitter):
         self.maxlen = maxlen
         self.timed = timed
         self.time = None
-
+        self.dt = None
         if self.timed:
             self.time = deque(maxlen=self.maxlen)
 
+        self.initialTime = 0
         self.lastTime = 0
     
     def __getitem__(self, key):
@@ -177,24 +204,49 @@ class MultipleBuffers(Emitter):
         return self.variables.values()
 
     def resetAll(self):
+        """It resets all buffers."""
         for buffer in self.variables.values():
             buffer.reset()
         self.maxlen = self.defaultMaxLen
         if self.sampleTimeEnabled():
             self.time = deque(maxlen=self.maxlen)
+            self.lastTime = 0
+            self.dt = 0
 
     def sampleTimeEnabled(self):
+        """It checks if the sample time is enabled."""
         return self.timed and self.time is not None
 
+    def getSampleInterval(self):
+        """It returns the sample time interval on secs."""
+        if self.dt is not None:
+            return self.dt
+        else:
+            return 0
+
+    def getSampleFrequency(self):
+        """It returns the sample frequency on Hz."""
+        dt = self.getSampleInterval()
+        if dt == 0:
+            return 0
+        else:
+            return 1 / dt
+
     def sampleTime(self):
+        """It samples the time of recording."""
         if self.sampleTimeEnabled():
             if len(self.time) == 0:
-                self.lastTime = time.time()
+                self.initialTime = time.time()
+                self.lastTime = self.initialTime
                 self.time.append(0)
+                self.dt = 0
             else:
                 currentTime = time.time()
                 dt = currentTime - self.lastTime
-                self.time.append(dt)
+                self.dt = dt
+                self.lastTime = currentTime
+                elapsedTime = currentTime - self.initialTime
+                self.time.append(elapsedTime)
 
     def appendAll(self, data:dict):
         """It appends multiple variables values at the same time passing a dictinary with the keys/names and the corresponding values.
@@ -208,10 +260,9 @@ class MultipleBuffers(Emitter):
             except KeyError as e:
                 error = True
                 print(e)
-
         if not error:
             self.sampleTime()
-    
+
     def lenOf(self, key):
         """It returns the len of."""
         if key in self.variables:
@@ -221,6 +272,9 @@ class MultipleBuffers(Emitter):
         """It appends a new value to a specific variable buffer."""
         if key in self.variables:
             self.variables[key].append(value)
+
+            if self.sampleTimeEnabled():
+                self.sampleTime()
 
     def clearAll(self):
         """It clears every variable buffer."""
@@ -291,10 +345,6 @@ class MultipleBuffers(Emitter):
         if key in self.variables:
             self.variables[key].on(event, callback)
 
-    def getBuffer(self, key):
-        if key in self.variables:
-            return self.variables[key]
-
     def setNewLen(self, length:int):
         """It sets a new length for all buffers."""
         self.maxlen = length
@@ -302,15 +352,27 @@ class MultipleBuffers(Emitter):
         for buffer in self.variables.values():
             buffer.setNewLen(length)
 
-# b = MultipleBuffers(variables=['x', 'y'], timed=True, maxlen=10)
-# b.on('is-full', lambda: print(b.getDataAndTime))
-# b['x'].on('is-full', lambda data: print('hola: ', data))
-# for i in range(10):
-#     x = random.randint(1, 10)
-#     y = random.randint(1, 10)
-#     data = {'x': x, 'y': y}
+# Fs = 500
+# T = 1 / Fs
+# L = 1000
+# N = 1000
+# v = ['x', 'y', 'z', 'w']
+# b = MultipleBuffers(variables=v, timed=True, autoclear=True, maxlen=L)
+# print(T)
+
+# for i in range(N):  
+#     data = {k:random.randint(1, 10) for k in v}
+#     t0 = time.time()
 #     b.appendAll(data)
-#     time.sleep(.25)
+#     time.sleep(T)
+#     t1 = time.time()
+#     dt = t1 - t0
+#     # print('Fs: ', b.getSampleFrequency(), " || ", b.getSampleInterval())
+
 # data = b.getDataAndTime()
-# print(data)
-# print(b.infoLen())
+# t = data['t']
+# dtv = np.diff(t)
+# dt = np.mean(dtv)
+# print('')
+# print('dt: ', dt)
+# print('Fs: ', 1 / dt)

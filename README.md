@@ -1,6 +1,8 @@
 # Oscilloscope
 An oscilloscope program to use with arduino, based on PyQt5 and Serial.
 
+![alt screenshot-1](./screenshots/ss1.png)
+
 # Install
 First you probabily want to create a virtual env:
 ```

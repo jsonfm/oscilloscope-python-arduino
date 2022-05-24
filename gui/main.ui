@@ -34,17 +34,44 @@ QCheckBox {
 
 #connectBtn:checked{
 background-color: rgb(0, 210, 146);
-border-radius: 10px;
+border-radius: 12px;
 }
 
 #recordBtn {
+width: 21px;
+height: 21px;
 background:rgb(179, 179, 179);
-border-radius: 2px;
+border-radius: 10px;
+border: 1px solid white;
+}
+
+#recordBtn:hover {
+cursor: pointer;
+}
+
+#recordBtn:checked  {
+background-color: rgb(255, 0, 67);
+}
+
+/*-------- Play BTN --------*/
+#playBtn {
+width: 18px;
+height: 17px;
+border-radius: 10px;
+background:rgb(179, 179, 179);
+border: 2px solid rgb(0, 205, 255);
+
+}
+
+#playBtn:checked {
+background-color: rgb(0, 205, 255);
 }
 
 #graph {
 	background-color: rgb(112, 112, 112);
-}</string>
+}
+
+</string>
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="3,0">
@@ -68,7 +95,7 @@ border-radius: 2px;
       <item>
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QLabel" name="label_7">
+         <widget class="QLabel" name="graphLabel">
           <property name="text">
            <string>Time Domain</string>
           </property>
@@ -109,14 +136,17 @@ border-radius: 2px;
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="recordBtn">
+         <widget class="QPushButton" name="recordBtn">
           <property name="text">
            <string/>
+          </property>
+          <property name="checkable">
+           <bool>true</bool>
           </property>
          </widget>
         </item>
         <item>
-         <widget class="QToolButton" name="toolButton">
+         <widget class="QToolButton" name="playBtn">
           <property name="text">
            <string>|&gt;</string>
           </property>
@@ -148,7 +178,7 @@ border-radius: 2px;
         <item>
          <widget class="QSpinBox" name="winSize">
           <property name="minimum">
-           <number>10</number>
+           <number>1</number>
           </property>
           <property name="maximum">
            <number>10000</number>
@@ -323,6 +353,13 @@ border-radius: 2px;
           </property>
          </widget>
         </item>
+        <item row="1" column="0">
+         <widget class="QCheckBox" name="checkBox">
+          <property name="text">
+           <string>FFT</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </item>
       <item>
@@ -362,7 +399,6 @@ border-radius: 2px;
    </widget>
    <addaction name="menuFile"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen">
    <property name="text">
     <string>Open</string>
