@@ -8,7 +8,7 @@
 const int analogInput1 = A1;
 
 // --------- SAMPLER VARIABLES --------
-unsigned int Fs = 100; // Sample frequency (Hz)
+unsigned int Fs = 50; // Sample frequency (Hz)
 const unsigned long SCALE_TIME_FACTOR = 1000; // 1000 -> ms | 1000000 -> us
 unsigned long dt = SCALE_TIME_FACTOR / Fs; // Sample interval (ms)
 unsigned long t = 0; 

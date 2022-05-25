@@ -6,7 +6,7 @@ from .buffer import Buffer
 class OscilloscopeBase:
     def __init__(self, timeout: float = .5, emitAsDict: bool = False):
         self.serial = Serial(name="arduino", timeout=timeout, emitAsDict=emitAsDict)
-        self.buffer = Buffer()
+        self.buffer = Buffer(maxlen=200)
 
     def start(self):
         self.serial.start()
