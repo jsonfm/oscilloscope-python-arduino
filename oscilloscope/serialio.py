@@ -57,6 +57,7 @@ class Serial(Emitter):
         super().__init__(emitterIsEnabled=emitterIsEnabled, *args, **kwargs)
         self.name = name
         self.port = kwargs.pop("port", None)
+        self.baudrate = kwargs.pop("baudrate", None)
         self.reconnectDelay = reconnectDelay
         self.maxAttempts = maxAttempts
         self.portsRefreshTime = portsRefreshTime
@@ -148,6 +149,7 @@ class Serial(Emitter):
             if self.serial.port is None and self.port is not None:
                 self.serial.port = self.port
 
+            self.serial.baudrate = self.baudrate
             self.serial.open()
 
         except Exception as e:

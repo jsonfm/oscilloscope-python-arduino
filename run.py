@@ -49,7 +49,7 @@ class Oscilloscope(QMainWindow):
     def __configureSerial(self):
         """Configures the serial device variables."""
         self.baudrates.addItems(['1200', '2400', '4800', '9600', '14400', '19200', '28800', '31250', '57600', '115200'])
-        self.baudrates.setCurrentIndex(3)
+        self.baudrates.setCurrentIndex(9)
         self.serial = Serial(name="arduino", timeout=.5, emitAsDict=False)
         self.serial.on('connection', self.updateSerialConnectionStatus)
         self.serial.on('ports', self.updateListOfPorts)
@@ -60,7 +60,7 @@ class Oscilloscope(QMainWindow):
         """Configures timers."""
         self.samplerTimerCounter = SamplerTimeCounter()
         self.frequencyLabelTimer = TimerCount(
-            interval=1, 
+            interval=1,
             callback = lambda: self.fsLabel.setText(f"{self.samplerTimerCounter.lastFrequency():.5f}")
         )
 
@@ -79,24 +79,26 @@ class Oscilloscope(QMainWindow):
         self.frequencyLabelTimer.update()
         self.samplerTimerCounter.update()
 
-    def updateGraph(self):   
-        """Plots the signal over the corresponding GUI element."""    
+    def updateGraph(self):
+        """Plots the signal over the corresponding GUI element."""
         data = self.buffer.getData()
         self.curve.setData(data)
 
         # When the buffer is full clear it
         if self.buffer.isFull():
             self.buffer.clear()
-        
+
     def updatePortDevice(self):
         """Updates a new value for the port device."""
         device = self.devices.currentText()
+        baudrate = self.baudrates.currentText()
         self.connectBtn.setChecked(False)
         if not self.serial.isOpen():
             self.serial.port = device
+            self.serial.baudrate = baudrate
         else:
             self.serial.disconnect(force=True)
-    
+
     def start(self):
         """Starts the serial read loop."""
         self.serial.start()
@@ -110,5 +112,5 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     w = Oscilloscope()
     w.show()
-    w.start() # 
+    w.start() #
     sys.exit(app.exec_())
